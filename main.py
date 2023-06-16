@@ -35,10 +35,10 @@ def pushup():
     filename = os.path.splitext(image_file.filename)[0]
 
     # Get the BucketDir from the request header
-    bucket_dir = request.headers.get('BucketDir')
+    bucket_location = request.headers.get('BucketLocation')
 
     # Create a folder for the filename in BucketDir
-    folder_path = os.path.join('assets', 'img', bucket_dir, filename)
+    folder_path = os.path.join('assets', 'img', bucket_location, filename)
     os.makedirs(folder_path, exist_ok=True)
 
     # Get the image size of the original image

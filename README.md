@@ -132,17 +132,17 @@ The PixelPushupAPI provides a simple and efficient way to upload images, generat
 
 ```sh
 
-curl -X POST -H "BucketDir: bottle/product" -F "image=@/Users/joshua/Desktop/angels-envy-rye.png" http://127.0.0.1:5000/pushup | jq
+curl -X POST -H "BucketLocation: bottle/product" -F "image=@/Users/joshua/Desktop/angels-envy-rye.png" http://127.0.0.1:5000/pushup | jq
 
-curl -X POST -H "BucketDir: bottle/product" -F "image=@/Users/joshua/Desktop/angels-envy-rye.png" https://knadac9lf1.execute-api.us-east-1.amazonaws.com/dev/pushup | jq
+curl -X POST -H "BucketLocation: bottle/product" -F "image=@/Users/joshua/Desktop/angels-envy-rye.png" https://knadac9lf1.execute-api.us-east-1.amazonaws.com/dev/pushup | jq
 
 ```
 
-just pass in the `BucketDir` in the headers
+just pass in the `BucketLocation` in the headers
 
 ## S3 Folder Structure
 
-````
+```
 - /assets
 	- /img
 		- /icon
@@ -161,10 +161,4 @@ just pass in the `BucketDir` in the headers
 		- /app
 			- {landing page images}.png
 			- {logo}.png
-	- /client
-		- /{bacardi}
-			- /list-assets
-				- /{venue-list-id}
-					- "sell-sheet.pdf"
-          ```
-````
+```
