@@ -13,6 +13,8 @@ The PixelPushupAPI is a Flask-based API that allows users to upload images, resi
 - **Description**: A test endpoint to check if the API is up and running.
 - **Response**: A plain text message indicating the API status.
 
+`curl http://127.0.0.1:5000/`
+
 ### Image Pushup
 
 - **Endpoint**: `/pushup`
@@ -63,7 +65,7 @@ The PixelPushupAPI can be deployed as a Lambda function using Zappa. Zappa allow
 
 1. Ensure you have the necessary AWS credentials set up.
 2. Install the required Python dependencies: `pip install flask flask-cors pillow boto3 zappa`.
-3. Set `S3_BUCKET_NAME` in your environment variables.
+3. Set `S3_BUCKET_NAME` in your environment variables where the server is running.
 4. Run the application locally for testing: `python main.py`.
 5. Configure your AWS credentials using the AWS CLI: `aws configure`.
 6. Deploy the application to AWS Lambda using Zappa: `zappa deploy dev`.
@@ -78,63 +80,62 @@ The PixelPushupAPI provides a simple and efficient way to upload images, generat
 {
   "images": [
     {
-      "file_size": "5.63 KB",
-      "filename": "angels-envy-rye",
-      "size": [37, 100],
+      "file_size": "8.76 KB",
+      "filename": "Trailer",
+      "size": [100, 57],
       "size_name": "t",
-      "url": "https://pixelpushup-test.s3.amazonaws.com/assets/img/bottle/product/angels-envy-rye/t.webp"
+      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/t.webp"
     },
     {
-      "file_size": "41.34 KB",
-      "filename": "angels-envy-rye",
-      "size": [112, 300],
+      "file_size": "66.68 KB",
+      "filename": "Trailer",
+      "size": [300, 171],
       "size_name": "s",
-      "url": "https://pixelpushup-test.s3.amazonaws.com/assets/img/bottle/product/angels-envy-rye/s.webp"
+      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/s.webp"
     },
     {
-      "file_size": "106.30 KB",
-      "filename": "angels-envy-rye",
-      "size": [186, 500],
+      "file_size": "173.34 KB",
+      "filename": "Trailer",
+      "size": [500, 286],
       "size_name": "m",
-      "url": "https://pixelpushup-test.s3.amazonaws.com/assets/img/bottle/product/angels-envy-rye/m.webp"
+      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/m.webp"
     },
     {
-      "file_size": "152.83 KB",
-      "filename": "angels-envy-rye",
-      "size": [222, 597],
+      "file_size": "422.63 KB",
+      "filename": "Trailer",
+      "size": [800, 457],
       "size_name": "l",
-      "url": "https://pixelpushup-test.s3.amazonaws.com/assets/img/bottle/product/angels-envy-rye/l.webp"
+      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/l.webp"
     },
     {
-      "file_size": "152.83 KB",
-      "filename": "angels-envy-rye",
-      "size": [222, 597],
+      "file_size": "638.99 KB",
+      "filename": "Trailer",
+      "size": [1000, 571],
       "size_name": "xl",
-      "url": "https://pixelpushup-test.s3.amazonaws.com/assets/img/bottle/product/angels-envy-rye/xl.webp"
+      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/xl.webp"
     },
     {
-      "file_size": "152.83 KB",
-      "filename": "angels-envy-rye",
-      "size": [222, 597],
+      "file_size": "911.84 KB",
+      "filename": "Trailer",
+      "size": [1200, 686],
       "size_name": "xxl",
-      "url": "https://pixelpushup-test.s3.amazonaws.com/assets/img/bottle/product/angels-envy-rye/xxl.webp"
+      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/xxl.webp"
     }
   ],
   "message": "Image processed and uploaded successfully.",
   "original": {
-    "file_size": "191.52 KB",
+    "file_size": "3.12 MB",
     "file_type": "image/png",
-    "filename": "angels-envy-rye",
-    "size": [222, 597]
+    "filename": "Trailer",
+    "size": [1792, 1024]
   }
 }
 ```
 
 ```sh
 
-curl -X POST -H "BucketLocation: bottle/product" -F "image=@/Users/joshua/Desktop/angels-envy-rye.png" http://127.0.0.1:5000/pushup | jq
+curl -X POST -H "BucketLocation: assets/img" -F "image=@/Users/joshua/Development/WhiskeyThrottleCafe/src/assets/Trailer.png" http://127.0.0.1:5000/pushup | jq
 
-curl -X POST -H "BucketLocation: bottle/product" -F "image=@/Users/joshua/Desktop/angels-envy-rye.png" https://knadac9lf1.execute-api.us-east-1.amazonaws.com/dev/pushup | jq
 
 ```
 
@@ -145,20 +146,6 @@ just pass in the `BucketLocation` in the headers
 ```
 - /assets
 	- /img
-		- /icon
-			- /occasions
-			- /cocktails
-			- /alcohol
-			- /alcohol-graphics
-		- /refinement
-			- /mentions
-			- /culture
-			- /gender
-		- /opportunity
-		- /bottle
-			- /category
-			- /product
-		- /app
-			- {landing page images}.png
-			- {logo}.png
+	- /icon
+
 ```

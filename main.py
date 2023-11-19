@@ -38,8 +38,7 @@ def pushup():
     bucket_location = request.headers.get('BucketLocation')
 
     # Create a folder for the filename in BucketDir
-    folder_path = os.path.join('assets', 'img', bucket_location, filename)
-    os.makedirs(folder_path, exist_ok=True)
+    folder_path = os.path.join(bucket_location, filename)
 
     # Get the image size of the original image
     original_image_size = image.size
@@ -55,6 +54,8 @@ def pushup():
     }
 
     # Get the S3 bucket name from environment variables
+    print("S3_BUCKET_NAME:", os.environ.get('S3_BUCKET_NAME'))
+
     bucket_name = os.environ.get('S3_BUCKET_NAME')
     if not bucket_name:
         return jsonify({'error': 'S3 bucket name not found in environment variables.'}), 500

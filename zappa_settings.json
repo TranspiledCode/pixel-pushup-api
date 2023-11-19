@@ -1,11 +1,11 @@
 {
   "dev": {
     "app_function": "main.app",
-    "profile_name": "groundsignal",
+    "profile_name": "transpiled",
     "project_name": "PixelPushupAPI",
     "runtime": "python3.10",
     "s3_bucket": "pixel-pushup-api",
     "slim_handler": true,
-    "aws_region": "us-east-1"
+    "aws_region": "us-west-2"
   }
 }
