@@ -1,4 +1,6 @@
 import os
+import boto3
+from botocore.exceptions import ClientError, NoCredentialsError
 from flask import Flask, request, jsonify
 from PIL import Image
 from io import BytesIO
@@ -7,6 +9,17 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+
+def bucket_exists(bucket_name):
+    """
+    Check if an S3 bucket exists.
+    """
+    s3 = boto3.client('s3')
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+        return True
+    except (ClientError, NoCredentialsError):
+        return False
 
 
 @app.route("/")
@@ -116,4 +129,12 @@ def pushup():
 
 
 if __name__ == '__main__':
-    app.run()
+    bucket_name = os.environ.get('S3_BUCKET_NAME')
+    if bucket_name:
+        if bucket_exists(bucket_name):
+            print(f" * Bucket '{bucket_name}' exists.")
+            app.run()
+        else:
+            print(f"Bucket '{bucket_name}' does not exist or is not accessible.")
+    else:
+        print("S3 bucket name not found in environment variables.")
