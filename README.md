@@ -1,80 +1,218 @@
-# PixelPushupAPI Documentation
+# PixelPushup API
 
 ![Image Alt Text](images/pushup.webp)
 
-The PixelPushupAPI is a Flask-based API that allows users to upload images, resize them, and store the resized versions in an S3 bucket. This documentation provides an overview of the API endpoints, request/response formats, and important considerations.
+A Flask-based API for uploading, resizing, and storing images in AWS S3. This tool automatically generates multiple sizes of your images and returns URLs for each version.
 
-## Endpoints
+## Table of Contents
 
-### Test Endpoint
+- [Prerequisites](#prerequisites)
+- [Initial Setup](#initial-setup)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the API](#running-the-api)
+- [Using the API](#using-the-api)
+- [API Reference](#api-reference)
+- [Development](#development)
+- [Deployment](#deployment)
+- [S3 Structure](#s3-structure)
+- [Troubleshooting](#troubleshooting)
 
-- **Endpoint**: `/`
-- **HTTP Method**: GET
-- **Description**: A test endpoint to check if the API is up and running.
-- **Response**: A plain text message indicating the API status.
+## Prerequisites
 
-`curl http://127.0.0.1:5000/`
+- Python 3.10+
+- AWS Account with admin access (for initial setup)
+- Git
+- Mac or Linux operating system
+- bash or fish shell
 
-### Image Pushup
+## Initial Setup
 
-- **Endpoint**: `/pushup`
-- **HTTP Method**: POST
-- **Description**: Uploads an image and generates resized versions of the image.
-- **Request**:
+### 1. AWS IAM Setup (One-time setup)
 
-  - Form Data:
-    - `image`: The image file to be uploaded (multipart/form-data).
+Contact your AWS administrator to:
 
-- **Response**:
-  - HTTP Status: 200 OK
-  - Body: JSON object containing the following information:
-    - `message`: A success message indicating that the image was processed and uploaded successfully.
-    - `original`: Details of the original image:
-      - `filename`: The filename of the original image.
-      - `size`: The dimensions of the original image.
-      - `file_size`: The file size of the original image.
-      - `file_type`: The MIME type of the original image.
-    - `images`: An array of resized image details, each containing:
-      - `filename`: The filename of the resized image.
-      - `size_name`: The size name of the resized image (t, s, m, l).
-      - `size`: The dimensions of the resized image.
-      - `file_size`: The file size of the resized image.
-      - `url`: The URL of the resized image stored in the S3 bucket.
+1. Create an IAM user for the PixelPushup API
+2. Attach these policies:
+   - AWSLambdaFullAccess
+   - AmazonS3FullAccess
+   - IAMFullAccess
+3. Generate and provide you with:
+   - Access Key ID
+   - Secret Access Key
 
-## Response Codes
+### 2. Install Required Tools
 
-- **200 OK**: The request was successful, and the response contains the expected data.
-- **400 Bad Request**: The request was malformed or missing required parameters.
-- **500 Internal Server Error**: An error occurred on the server-side.
+```bash
+# bash
+# Install Python (Mac)
+brew install python
 
-## Usage
+# Install AWS CLI
+pip3 install awscli
 
-To use the PixelPushupAPI, you can send an HTTP POST request to the `/pushup` endpoint, including the image file as form data. The API will process the image, generate resized versions, and store them in an S3 bucket. The response will contain information about the original image and the URLs of the resized images.
+# Configure AWS CLI with pixelPusher profile
+aws configure --profile pixelPusher
+# Enter Access Key ID when prompted
+# Enter Secret Access Key when prompted
+# Region: us-east-1 (or your preferred region)
+# Output format: json
 
-## Requirements
+# Verify AWS Configuration
+aws s3 ls --profile pixelPusher
+```
 
-- Python 3.10
-- Flask
-- Pillow (PIL)
-- boto3
-- flask-cors
+```fish
+# fish
+# Install Python (Mac)
+brew install python
 
-## Deployment
+# Install AWS CLI
+pip3 install awscli
 
-The PixelPushupAPI can be deployed as a Lambda function using Zappa. Zappa allows you to package and deploy Flask applications as serverless functions on AWS Lambda. The `zappa_settings.json` file contains the configuration settings for the Zappa deployment.
+# Configure AWS CLI with pixelPusher profile
+aws configure --profile pixelPusher
+# Enter Access Key ID when prompted
+# Enter Secret Access Key when prompted
+# Region: us-east-1 (or your preferred region)
+# Output format: json
 
-1. Ensure you have the necessary AWS credentials set up.
-2. Install the required Python dependencies: `pip install flask flask-cors pillow boto3 zappa`.
-3. Set `S3_BUCKET_NAME` in your environment variables where the server is running.
-4. Run the application locally for testing: `python main.py`.
-5. Configure your AWS credentials using the AWS CLI: `aws configure`.
-6. Deploy the application to AWS Lambda using Zappa: `zappa deploy dev`.
+# Verify AWS Configuration
+aws s3 ls --profile pixelPusher
+```
 
-## Conclusion
+## Installation
 
-The PixelPushupAPI provides a simple and efficient way to upload images, generate resized versions, and store them in an S3 bucket. By leveraging Flask, AWS Lambda, and S3, you can easily integrate image uploading and resizing functionality into your applications.
+### 1. Clone the Repository
 
-## Example output.
+```bash
+# bash/fish
+git clone git@github.com:TranspiledCode/pixel-pushup-api.git
+cd pixel-pushup-api
+```
+
+### 2. Set Up Virtual Environment
+
+```bash
+# bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+```fish
+# fish
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate.fish
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3. Create Executable (Optional)
+
+```bash
+# bash/fish
+# Install PyInstaller
+pip install pyinstaller
+
+# Create executable
+pyinstaller --onefile main.py --name pixel-pushup
+
+# The executable will be in the 'dist' directory
+```
+
+## Configuration
+
+### 1. Environment Setup
+
+Create a `.env` file in the project root:
+
+```bash
+# bash
+echo "AWS_PROFILE=pixelPusher" >> .env
+```
+
+```fish
+# fish
+echo "AWS_PROFILE=pixelPusher" >> .env
+```
+
+### 2. S3 Bucket Structure
+
+```
+your-bucket-name/
+├── assets/
+│   ├── img/
+│   └── icon/
+```
+
+## Running the API
+
+### Development Mode
+
+```bash
+# bash
+# Activate virtual environment (if not already activated)
+source venv/bin/activate
+
+# Run the API
+python main.py
+```
+
+```fish
+# fish
+# Activate virtual environment (if not already activated)
+source venv/bin/activate.fish
+
+# Run the API
+python main.py
+```
+
+### Using the Executable
+
+```bash
+# bash/fish
+./dist/pixel-pushup
+```
+
+## Using the API
+
+### 1. Test the Connection
+
+```bash
+# bash/fish
+curl http://127.0.0.1:5000/
+# Should return "PixelPushup API is running!"
+```
+
+### 2. Upload and Process an Image
+
+```bash
+# bash
+curl -X POST \
+  -H "BucketLocation: assets/img" \
+  -F "image=@/path/to/your/image.png" \
+  http://127.0.0.1:5000/pushup | jq
+```
+
+```fish
+# fish
+curl -X POST \
+  -H "BucketLocation: assets/img" \
+  -F "image=@/path/to/your/image.png" \
+  http://127.0.0.1:5000/pushup | jq
+```
+
+Example Response:
 
 ```json
 {
@@ -84,43 +222,16 @@ The PixelPushupAPI provides a simple and efficient way to upload images, generat
       "filename": "Trailer",
       "size": [100, 57],
       "size_name": "t",
-      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/t.webp"
+      "url": "https://your-bucket.s3.amazonaws.com/assets/img/Trailer/t.webp"
     },
     {
       "file_size": "66.68 KB",
       "filename": "Trailer",
       "size": [300, 171],
       "size_name": "s",
-      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/s.webp"
-    },
-    {
-      "file_size": "173.34 KB",
-      "filename": "Trailer",
-      "size": [500, 286],
-      "size_name": "m",
-      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/m.webp"
-    },
-    {
-      "file_size": "422.63 KB",
-      "filename": "Trailer",
-      "size": [800, 457],
-      "size_name": "l",
-      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/l.webp"
-    },
-    {
-      "file_size": "638.99 KB",
-      "filename": "Trailer",
-      "size": [1000, 571],
-      "size_name": "xl",
-      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/xl.webp"
-    },
-    {
-      "file_size": "911.84 KB",
-      "filename": "Trailer",
-      "size": [1200, 686],
-      "size_name": "xxl",
-      "url": "https://whiskey-throttle-cafe.s3.amazonaws.com/assets/img/Trailer/xxl.webp"
+      "url": "https://your-bucket.s3.amazonaws.com/assets/img/Trailer/s.webp"
     }
+    // ... more sizes ...
   ],
   "message": "Image processed and uploaded successfully.",
   "original": {
@@ -132,20 +243,136 @@ The PixelPushupAPI provides a simple and efficient way to upload images, generat
 }
 ```
 
-```sh
+## API Reference
 
-curl -X POST -H "BucketLocation: assets/img" -F "image=@/Users/joshua/Development/WhiskeyThrottleCafe/src/assets/Trailer.png" http://127.0.0.1:5000/pushup | jq
+### Test Endpoint
 
+- **URL**: `/`
+- **Method**: `GET`
+- **Response**: Text confirming API is running
 
+### Image Processing Endpoint
+
+- **URL**: `/pushup`
+- **Method**: `POST`
+- **Headers**:
+  - `BucketLocation`: Path in S3 bucket (e.g., "assets/img")
+- **Body**:
+  - `image`: Image file (multipart/form-data)
+- **Response**: JSON object with original and resized image details
+
+Generated Image Sizes:
+
+- Thumbnail (t): 100px width
+- Small (s): 300px width
+- Medium (m): 500px width
+- Large (l): 800px width
+- Extra Large (xl): 1000px width
+- Double Extra Large (xxl): 1200px width
+
+## Development
+
+### Running Tests
+
+```bash
+# bash/fish
+python -m pytest tests/
 ```
 
-just pass in the `BucketLocation` in the headers
+### Code Style
 
-## S3 Folder Structure
+```bash
+# bash/fish
+# Install black
+pip install black
+
+# Format code
+black .
+```
+
+## Deployment
+
+### Deploy to AWS Lambda
+
+```bash
+# bash
+export AWS_PROFILE=pixelPusher
+zappa deploy dev
+```
+
+```fish
+# fish
+set -x AWS_PROFILE pixelPusher
+zappa deploy dev
+```
+
+## S3 Structure
 
 ```
-- /assets
-	- /img
-	- /icon
-
+bucket-name/
+├── assets/
+│   ├── img/
+│   │   └── ImageName/
+│   │       ├── t.webp
+│   │       ├── s.webp
+│   │       ├── m.webp
+│   │       ├── l.webp
+│   │       ├── xl.webp
+│   │       └── xxl.webp
+│   └── icon/
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **AWS Credentials Not Working**
+
+```bash
+# bash/fish
+aws configure list --profile pixelPusher
+# Verify credentials are correct
+```
+
+2. **Virtual Environment Issues**
+
+```bash
+# bash
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+```fish
+# fish
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate.fish
+pip install -r requirements.txt
+```
+
+3. **Permission Denied on S3**
+   - Verify IAM user has correct permissions
+   - Check S3 bucket policy
+   - Ensure bucket name in .env is correct
+
+### Getting Help
+
+- Open an issue on GitHub
+- Check AWS CloudWatch logs for Lambda deployments
+- Review Flask debug logs when running locally
+
+## Requirements
+
+- Python 3.10+
+- Flask
+- Pillow (PIL)
+- boto3
+- flask-cors
+- python-dotenv
+- zappa (for deployment)
+
+## License
+
+MIT License - See LICENSE file for details

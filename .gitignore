@@ -3,3 +3,6 @@ __pycache__/*
 venv/
 assets/
 .DS_Store
+build
+dist
+.env
