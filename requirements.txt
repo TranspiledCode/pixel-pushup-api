@@ -1,4 +1,6 @@
 boto3==1.26.153
 Flask==2.3.2
 flask_cors==3.0.10
-Pillow==9.5.0
+Pillow>=10.1.0
+python-dotenv==1.0.0
+pdf2image==1.16.3
