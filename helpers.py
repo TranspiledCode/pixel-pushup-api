@@ -1,52 +1,73 @@
+# backend/helpers.py
 import boto3
+from botocore.exceptions import ClientError, NoCredentialsError, BotoCoreError
+import re
+from PIL import Image
 from io import BytesIO
+import posixpath
+import logging
 
-s3_client = boto3.client('s3')
+logger = logging.getLogger(__name__)
 
+def validate_s3_prefix(s3_prefix):
+    """Validate the S3 path prefix format."""
+    pattern = r'^[\w\-\/]+$'
+    if re.match(pattern, s3_prefix):
+        return True
+    return False
 
-def resize_image(image, size):
-    # Resize the image while preserving the aspect ratio
-    image.thumbnail(size)
-    return image
+def validate_bucket_location(bucket_location):
+    """Validate the BucketLocation format."""
+    pattern = r'^[a-z]{2}-[a-z]+-\d+$'
+    if re.match(pattern, bucket_location):
+        return True
+    return False
 
-
-def upload_image_to_s3(image, key, bucket_name):
-    # Convert the image to WebP format with lossless compression
-    image_data = BytesIO()
-    image.save(image_data, format='webp', lossless=True)
-    image_data.seek(0)
-
-    # Upload the image to S3 using the pre-created client object
-    s3_client.upload_fileobj(image_data, bucket_name, key)
-    image_data.close()
-
-
-def is_file_exists(bucket_name, key):
-    # Check if the file already exists in the bucket
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(bucket_name)
-    objs = list(bucket.objects.filter(Prefix=key))
-    return len(objs) > 0
-
-
-def format_file_size(file_size):
-    if file_size >= 1024 * 1024:
-        # Convert to MB
-        file_size = f'{file_size / (1024 * 1024):.2f} MB'
-    else:
-        # Convert to KB
-        file_size = f'{file_size / 1024:.2f} KB'
-
-    return file_size
-
-
-def get_file_size(bucket_name, key):
-    # Get the file size from S3
+def bucket_exists(bucket_name):
+    """Check if an S3 bucket exists."""
     s3 = boto3.client('s3')
-    response = s3.head_object(Bucket=bucket_name, Key=key)
-    file_size = response['ContentLength']
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+        logger.debug(f"S3 bucket exists: {bucket_name}")
+        return True
+    except ClientError:
+        logger.error(f"S3 bucket does not exist or is inaccessible: {bucket_name}")
+        return False
+    except NoCredentialsError:
+        logger.error("AWS credentials not found.")
+        return False
 
-    # Format the file size
-    formatted_size = format_file_size(file_size)
+def upload_image_to_s3(image, key, bucket_name, export_type):
+    """Upload an image to AWS S3."""
+    try:
+        s3 = boto3.client('s3')
+        buffer = BytesIO()
+        save_kwargs = {}
+        
+        # Determine save parameters based on export_type
+        if export_type == 'webp':
+            save_kwargs['lossless'] = True
+        image.save(buffer, format=export_type.upper(), **save_kwargs)
+        buffer.seek(0)
+        content_type = f'image/{export_type.lower()}'
+        
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=key,
+            Body=buffer,
+            ContentType=content_type
+        )
+        logger.info(f"Uploaded image to S3: Bucket='{bucket_name}', Key='{key}'")
+    except (ClientError, NoCredentialsError, BotoCoreError) as e:
+        logger.exception(f"Failed to upload image to S3: {key}")
+        raise
 
-    return formatted_size
+def resize_image(image, size, resample_filter):
+    """Resize an image to the given size."""
+    try:
+        image.thumbnail(size, resample=resample_filter)
+        logger.debug(f"Image resized to {size}")
+        return image
+    except Exception as e:
+        logger.exception("Failed to resize image.")
+        raise
