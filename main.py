@@ -1,3 +1,4 @@
+# backend/app.py
 import os
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -23,13 +24,14 @@ def resize_image(image, size):
     image.thumbnail(size, resample=resample_filter)
     return image
 
-def upload_image_to_s3(image, key, bucket_name):
+def upload_image_to_s3(image, key, bucket_name, export_type):
     """Upload an image to AWS S3."""
     s3 = boto3.client('s3')
     buffer = BytesIO()
-    image.save(buffer, format='webp', lossless=True)
+    image.save(buffer, format=export_type.upper(), lossless=True if export_type == 'webp' else False)
     buffer.seek(0)
-    s3.put_object(Bucket=bucket_name, Key=key, Body=buffer, ContentType='image/webp')
+    content_type = f'image/{export_type.lower()}'
+    s3.put_object(Bucket=bucket_name, Key=key, Body=buffer, ContentType=content_type)
 
 def bucket_exists(bucket_name):
     """Check if an S3 bucket exists."""
@@ -57,6 +59,15 @@ def pushup():
     processing_mode = request.form.get('Processing-Mode', 'local').lower()
     if processing_mode not in ['local', 'aws']:
         return jsonify({'error': 'Invalid Processing-Mode. Must be "local" or "aws".'}), 400
+
+    # Get the Export-Type from the request form data
+    export_type = request.form.get('Export-Type', 'webp').lower()
+    if export_type not in ['png', 'webp', 'jpg', 'jpeg']:
+        return jsonify({'error': 'Invalid Export-Type. Must be "png", "webp", or "jpg".'}), 400
+
+    # Normalize 'jpg' to 'jpeg' for Pillow compatibility
+    if export_type == 'jpg':
+        export_type = 'jpeg'
 
     # For 'aws' processing mode, get the BucketLocation
     bucket_location = None
@@ -122,7 +133,7 @@ def pushup():
                 # Upload the original image to S3
                 original_extension = os.path.splitext(image_file.filename)[1]
                 s3_original_key = os.path.join(bucket_location, filename, f'original{original_extension}')
-                upload_image_to_s3(image.copy(), s3_original_key, bucket_name)
+                upload_image_to_s3(image.copy(), s3_original_key, bucket_name, export_type)
 
             # Process and save/upload resized images
             for size_name, size in sizes.items():
@@ -130,23 +141,23 @@ def pushup():
 
                 # Image metadata
                 image_info = {
-                    'filename': f'{filename}/{size_name}.webp',
+                    'filename': f'{filename}/{size_name}.{export_type}',
                     'size_name': size_name,
                     'size': resized_image.size,
                 }
 
                 if processing_mode == 'local':
-                    # Convert the image to WebP format with lossless compression
+                    # Convert the image to the selected export format
                     image_data = BytesIO()
-                    resized_image.save(image_data, format='webp', lossless=True)
+                    resized_image.save(image_data, format=export_type.upper(), lossless=True if export_type == 'webp' else False)
                     image_data.seek(0)
-                    zip_filename = f'{filename}/{size_name}.webp'
+                    zip_filename = f'{filename}/{size_name}.{export_type}'
                     zip_file.writestr(zip_filename, image_data.read())
                     image_data.close()
 
                 if processing_mode == 'aws':
-                    s3_key = os.path.join(bucket_location, filename, f'{size_name}.webp')
-                    upload_image_to_s3(resized_image, s3_key, bucket_name)
+                    s3_key = os.path.join(bucket_location, filename, f'{size_name}.{export_type}')
+                    upload_image_to_s3(resized_image, s3_key, bucket_name, export_type)
 
                 # Append metadata to image_details
                 image_details.append(image_info)
