@@ -6,5 +6,4 @@ assets/
 build
 dist
 .env
-images
 uploads

@@ -1,170 +1,165 @@
 # PixelPushup API
 
-A Flask-based API for uploading, resizing, and storing images locally and/or in AWS S3. This tool automatically generates multiple sizes of your images, supports PDF conversion to images, and returns URLs for each version.
+A flexible Flask-based API for uploading, resizing, and storing images locally and in AWS S3.
 
-## Prerequisites
+![PixelPushup Logo](images/pushup.webp)
 
-- macOS
+
+## 🌟 Features
+
+- Multiple image processing modes (local, AWS S3)
+- Automatic image resizing to multiple sizes
+- Supports various export formats (PNG, WebP, JPEG)
+- PDF to image conversion support
+- Configurable logging and processing
+
+## 📋 Prerequisites
+
+### System Requirements
 - Python 3.10+
-- Fish shell
-- AWS Account (if using AWS mode)
+- macOS (recommended)
 - Git
+- AWS Account (optional, for S3 mode)
 
-## Installation
+### Required Tools
+- Python
+- AWS CLI (optional)
+- Poppler (for PDF conversion)
 
-### 1. Install Required Tools
+## 🚀 Quick Setup
 
-```fish
-# Install Python
-brew install python
+### 1. Install Dependencies
 
-# Install AWS CLI (if using AWS S3)
-pip3 install awscli
+```bash
+# Using Homebrew (macOS)
+brew install python awscli poppler
 
-# Install Poppler (required for PDF conversion)
-brew install poppler
+# Using pip
+pip install --upgrade pip setuptools wheel
 ```
 
-### 2. Configure AWS (If using AWS S3)
+### 2. Clone and Set Up Project
 
-```fish
+```bash
+# Clone the repository
+git clone https://github.com/TranspiledCode/pixel-pushup-api.git
+cd pixel-pushup-api
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # For Fish shell: source venv/bin/activate.fish
+
+# Install project dependencies
+pip install -r requirements.txt
+pip install pdf2image
+```
+
+### 3. Configure AWS (Optional)
+
+```bash
 # Configure AWS credentials
 aws configure --profile pixelPusher
-# Enter your:
-# - Access Key ID
-# - Secret Access Key
-# - Region
-# - Output format (json recommended)
 
 # Verify configuration
 aws s3 ls --profile pixelPusher
 ```
 
-### 3. Set Up Project
+### 4. Environment Configuration
 
-```fish
-# Clone repository
-git clone git@github.com:TranspiledCode/pixel-pushup-api.git
-cd pixel-pushup-api
+Create a `.env` file:
 
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate.fish
-
-# Install dependencies
-pip install -r requirements.txt
-pip install pdf2image
+```bash
+AWS_PROFILE=pixelPusher
+S3_BUCKET_NAME=your-s3-bucket-name
 ```
 
-### 4. Configuration
+## 🔧 Running the API
 
-Create a `.env` file in the project root (if using AWS S3):
-
-```fish
-echo "AWS_PROFILE=pixelPusher" >> .env
-echo "S3_BUCKET_NAME=your-s3-bucket-name" >> .env
+```bash
+# Start API in different modes
+python main.py  # Default mode
+python main.py --mode local   # Local processing only
+python main.py --mode aws     # AWS S3 processing only
 ```
 
-## Running the API
+## 📤 API Usage Examples
 
-The API supports three processing modes:
-
-- `local`: Save images to local file system only
-- `aws`: Upload images to AWS S3 only
-- `both`: Save images both locally and to AWS S3
-
-```fish
-# Start the API in your preferred mode
-python main.py --mode local  # or 'aws' or 'both'
-```
-
-## Using the API
-
-### 1. Test Connection
-
-```fish
+### Test Connection
+```bash
 curl http://127.0.0.1:5000/
-# Should return "PixelPushupAPI is up and running!"
 ```
 
-### 2. Upload Images
-
-```fish
+### Upload Images
+```bash
 # Upload an image
 curl -X POST \
-  -H "BucketLocation: assets/img" \
   -H "Processing-Mode: local" \
-  -F "image=@/path/to/your/image.png" \
-  http://127.0.0.1:5000/pushup | jq
-
-# Upload a PDF
-curl -X POST \
-  -H "BucketLocation: assets/img" \
-  -H "Processing-Mode: local" \
-  -F "image=@/path/to/your/document.pdf" \
-  http://127.0.0.1:5000/pushup | jq
+  -F "image=@/path/to/image.png" \
+  http://127.0.0.1:5000/pushup
 ```
 
-## Generated Image Sizes
+## 🖼️ Generated Image Sizes
 
-- Thumbnail (t): 100x100px
-- Small (s): 300x300px
-- Medium (m): 500x500px
-- Large (l): 800x800px
-- Extra Large (xl): 1000x1000px
-- Double Extra Large (xxl): 1200x1200px
+| Size | Dimensions |
+|------|------------|
+| Thumbnail (t) | 100x100px |
+| Small (s) | 300x300px |
+| Medium (m) | 500x500px |
+| Large (l) | 800x800px |
+| Extra Large (xl) | 1000x1000px |
+| Double Extra Large (xxl) | 1200x1200px |
 
-## Development
+## 🛠️ Development
 
-```fish
-# Run tests
-python -m pytest tests/
+### Running Tests
+```bash
+# Run test suite
+pytest tests/
 
-# Format code
+# Code formatting
 pip install black
 black .
 ```
 
-## Troubleshooting
+## 🔍 Troubleshooting
 
 ### Common Issues
-
-1. **Virtual Environment Problems**
-
-   ```fish
+1. **Virtual Environment**
+   - Recreate venv if issues persist
+   ```bash
    rm -rf venv
    python3 -m venv venv
-   source venv/bin/activate.fish
+   source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-2. **AWS Credential Issues**
-
-   ```fish
+2. **AWS Credential Verification**
+   ```bash
    aws configure list --profile pixelPusher
    ```
 
-3. **PDF Processing Errors**
-   - Ensure `pdf2image` and `poppler` are installed correctly
-   - Verify PDF file is valid and accessible
-
 ### Getting Help
+- Open GitHub issues
+- Check AWS CloudWatch logs
+- Review Flask debug logs
 
-- Open an issue on GitHub
-- Check AWS CloudWatch logs (if using AWS)
-- Review Flask debug logs when running locally
+## 📦 Dependencies
 
-## Requirements
-
-- Python 3.10+
 - Flask
-- Pillow (PIL)
-- boto3 (for AWS S3)
+- Pillow
+- boto3
 - flask-cors
 - python-dotenv
 - pdf2image
-- Poppler
 
-## License
+## 🤝 Contributing
+
+See `CONTRIBUTING.md` for development guidelines and contribution process.
+
+## 📄 License
 
 MIT License - See LICENSE file for details
+
+## 🚨 Support
+
+For issues or questions, [open a GitHub issue](https://github.com/TranspiledCode/pixel-pushup-api/issues)
