@@ -71,3 +71,8 @@ def resize_image(image, size, resample_filter):
     except Exception as e:
         logger.exception("Failed to resize image.")
         raise
+
+def validate_s3_bucket_name(bucket_name):
+    """Validate the S3 bucket name format."""
+    pattern = r'^[a-z0-9.-]{3,63}$'
+    return re.match(pattern, bucket_name) is not None

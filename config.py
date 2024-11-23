@@ -3,7 +3,6 @@ import os
 
 class Config:
     """Base configuration."""
-    S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
     VERBOSE = os.environ.get('VERBOSE', 'False').lower() in ['true', '1', 'yes']
     LOG_LEVEL = 'DEBUG' if VERBOSE else 'INFO'
     

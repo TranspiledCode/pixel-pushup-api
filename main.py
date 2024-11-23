@@ -1,5 +1,5 @@
+# main.py
 import os
-import boto3
 from flask import Flask, request, jsonify, send_file
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
@@ -14,7 +14,8 @@ from helpers import (
     validate_bucket_location,
     bucket_exists,
     upload_image_to_s3,
-    resize_image
+    resize_image,
+    validate_s3_bucket_name  
 )
 from config import Config
 
@@ -79,6 +80,7 @@ def pushup():
             logger.debug("Normalized Export-Type 'jpg' to 'jpeg'.")
 
         s3_prefix = None
+        bucket_name = None
         if processing_mode == 'aws':
             s3_prefix = request.form.get('S3_Prefix', '').strip()
             logger.debug(f"S3_Prefix received: '{s3_prefix}'")
@@ -91,10 +93,17 @@ def pushup():
                 logger.warning(f"Invalid S3_Prefix format: '{s3_prefix}'")
                 return jsonify({'error': 'Invalid S3_Prefix format.'}), 400
 
-            bucket_name = Config.S3_BUCKET_NAME
+            # Extract S3_Bucket_Name from the request
+            bucket_name = request.form.get('S3_Bucket_Name', '').strip()
+            logger.debug(f"S3_Bucket_Name received: '{bucket_name}'")
+
             if not bucket_name:
-                logger.error('S3_BUCKET_NAME not set in environment variables.')
-                return jsonify({'error': 'S3 bucket name not found in environment variables.'}), 500
+                logger.error('S3_Bucket_Name is missing in the request.')
+                return jsonify({'error': 'S3_Bucket_Name is missing in the request.'}), 400
+
+            if not validate_s3_bucket_name(bucket_name):
+                logger.warning(f"Invalid S3_Bucket_Name format: '{bucket_name}'")
+                return jsonify({'error': 'Invalid S3_Bucket_Name format.'}), 400
 
             if not bucket_exists(bucket_name):
                 logger.error(f"S3 bucket '{bucket_name}' does not exist or is inaccessible.")
@@ -104,7 +113,7 @@ def pushup():
 
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            logger.debug("Initialized in-memory ZIP buffer for local processing.")
+            logger.debug("Initialized in-memory ZIP buffer for processing.")
 
             sizes = {
                 't': (100, 100),
@@ -122,7 +131,7 @@ def pushup():
                     image_file.seek(0)
                     image = Image.open(image_file).convert('RGB')
                     logger.debug(f"Opened and verified image: {image_file.filename}")
-                except (UnidentifiedImageError, Exception) as e:
+                except (UnidentifiedImageError, Exception):
                     logger.exception(f"Failed to open or verify image: {image_file.filename}")
                     return jsonify({'error': f'Invalid image file: {image_file.filename}.'}), 400
 
@@ -158,7 +167,7 @@ def pushup():
                         zip_file.writestr(original_filename, image_data.read())
                         image_data.close()
                         logger.info(f"Saved original image to ZIP: '{original_filename}'")
-                    except Exception as e:
+                    except Exception:
                         logger.exception(f"Failed to save original image: '{filename}'")
                         return jsonify({'error': f'Failed to save original image: {filename}.'}), 500
 
@@ -166,7 +175,7 @@ def pushup():
                     try:
                         resized_image = resize_image(image.copy(), size, resample_filter)
                         logger.debug(f"Resized image '{filename}' to size '{size_name}': {resized_image.size}")
-                    except Exception as e:
+                    except Exception:
                         logger.exception(f"Failed to resize image '{filename}' to size '{size_name}'")
                         return jsonify({'error': f'Failed to resize image {filename}.'}), 500
 
@@ -185,9 +194,18 @@ def pushup():
                             zip_file.writestr(zip_filename, image_data.read())
                             image_data.close()
                             logger.info(f"Saved resized image to ZIP: '{zip_filename}'")
-                        except Exception as e:
+                        except Exception:
                             logger.exception(f"Failed to save resized image: '{zip_filename}'")
                             return jsonify({'error': f'Failed to save resized image: {zip_filename}.'}), 500
+                    elif processing_mode == 'aws':
+                        try:
+                            s3_key = posixpath.join(s3_prefix, filename, f'{size_name}.{export_type}')
+                            upload_image_to_s3(resized_image, s3_key, bucket_name, export_type)
+                            logger.info(f"Uploaded resized image to S3: Bucket='{bucket_name}', Key='{s3_key}'")
+                            image_info['s3_url'] = f's3://{bucket_name}/{s3_key}'
+                        except Exception:
+                            logger.exception(f"Failed to upload image to S3: '{s3_key}'")
+                            return jsonify({'error': f'Failed to upload image to S3: {s3_key}.'}), 500
 
                     image_details.append(image_info)
 
@@ -207,7 +225,7 @@ def pushup():
                     as_attachment=True,
                     download_name='all_images_processed.zip'
                 )
-            except Exception as e:
+            except Exception:
                 logger.exception("Failed to send ZIP file to client.")
                 return jsonify({'error': 'Failed to create ZIP file.'}), 500
 
@@ -217,21 +235,13 @@ def pushup():
             'files': processed_files
         }), 200
 
-    except Exception as e:
+    except Exception:
         logger.exception("An unexpected error occurred during processing.")
         return jsonify({'error': 'Internal server error.'}), 500
 
-
 if __name__ == '__main__':
-    required_env_vars = ['S3_BUCKET_NAME']
-    missing_vars = [var for var in required_env_vars if not getattr(Config, var, None)]
-    if missing_vars:
-        logger.critical(f"Missing required environment variables: {', '.join(missing_vars)}")
-        exit(1)
-    else:
-        logger.info("All required environment variables are set.")
-
+    # No required environment variables now
     try:
         app.run(port=5000, debug=False)
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to start the Flask application.")
