@@ -1,156 +1,131 @@
-# PixelPushup API
-
-A flexible Flask-based API for uploading, resizing, and storing images locally and in AWS S3.
+# PixelPushupAPI
 
 ![PixelPushup Logo](images/pushup.webp)
 
+A high-performance Flask-based API for batch image processing, resizing, and optimization. PixelPushupAPI automatically generates multiple sizes of your images while maintaining quality and optimizing for web use.
 
-## 🌟 Features
+## Features
 
-- Multiple image processing modes (local, AWS S3)
-- Automatic image resizing to multiple sizes
-- Supports various export formats (PNG, WebP, JPEG)
-- PDF to image conversion support
-- Configurable logging and processing
+- Batch image processing with parallel execution
+- Multiple output sizes (thumbnail to XXL)
+- Support for multiple export formats (WebP, JPEG, PNG)
+- Color profile conversion to sRGB
+- Automatic image optimization
+- CORS support for web applications
+- Memory-efficient processing using temporary files
+- Maintains aspect ratios during resizing
 
-## 📋 Prerequisites
+## Prerequisites
 
-### System Requirements
-- Python 3.10+
-- macOS (recommended)
-- Git
-- AWS Account (optional, for S3 mode)
-
-### Required Tools
-- Python
-- AWS CLI (optional)
-- Poppler (for PDF conversion)
-
-## 🚀 Quick Setup
-
-### 1. Install Dependencies
-
-```bash
-# Using Homebrew (macOS)
-brew install python awscli poppler
-
-# Using pip
-pip install --upgrade pip setuptools wheel
-```
-
-### 2. Clone and Set Up Project
-
-```bash
-# Clone the repository
-git clone https://github.com/TranspiledCode/pixel-pushup-api.git
-cd pixel-pushup-api
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # For Fish shell: source venv/bin/activate.fish
-
-# Install project dependencies
-pip install -r requirements.txt
-pip install pdf2image
-```
-
-### 3. Configure AWS (Optional)
-
-```bash
-# Configure AWS credentials
-aws configure --profile pixelPusher
-
-# Verify configuration
-aws s3 ls --profile pixelPusher
-```
-
-### 4. Environment Configuration
-
-Create a `.env` file:
-
-```bash
-AWS_PROFILE=pixelPusher
-S3_BUCKET_NAME=your-s3-bucket-name
-```
-
-## 🔧 Running the API
-
-```bash
-# Start API in different modes
-python main.py  # Default mode
-python main.py --mode local   # Local processing only
-python main.py --mode aws     # AWS S3 processing only
-```
-
-## 📤 API Usage Examples
-
-### Test Connection
-```bash
-curl http://127.0.0.1:5000/
-```
-
-### Upload Images
-```bash
-# Upload an image
-curl -X POST \
-  -H "Processing-Mode: local" \
-  -F "image=@/path/to/image.png" \
-  http://127.0.0.1:5000/pushup
-```
-
-## 🖼️ Generated Image Sizes
-
-| Size | Dimensions |
-|------|------------|
-| Thumbnail (t) | 100x100px |
-| Small (s) | 300x300px |
-| Medium (m) | 500x500px |
-| Large (l) | 800x800px |
-| Extra Large (xl) | 1000x1000px |
-| Double Extra Large (xxl) | 1200x1200px |
-
-## 🛠️ Development
-
-### Running Tests
-```bash
-# Run test suite
-pytest tests/
-
-# Code formatting
-pip install black
-black .
-```
-
-## 🔍 Troubleshooting
-
-### Common Issues
-1. **Virtual Environment**
-   - Recreate venv if issues persist
-   ```bash
-   rm -rf venv
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-2. **AWS Credential Verification**
-   ```bash
-   aws configure list --profile pixelPusher
-   ```
-
-### Getting Help
-- Open GitHub issues
-- Check AWS CloudWatch logs
-- Review Flask debug logs
-
-## 📦 Dependencies
-
+- Python 3.x
+- PIL (Pillow)
 - Flask
-- Pillow
-- boto3
-- flask-cors
-- python-dotenv
-- pdf2image
+- Flask-CORS
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd pixel-pushup-api
+```
+
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+# Fish Shell: 
+source venv/bin/activate.fish
+# Bash: 
+source venv/bin/activate
+```
+
+3. Install dependencies:
+```bash
+pip install flask pillow flask-cors
+```
+
+## Configuration
+
+The API can be configured through environment variables:
+
+- `VERBOSE`: Set to 'True' for detailed logging (default: False)
+- `LOG_LEVEL`: Automatically set based on VERBOSE setting
+- `MAX_WORKERS`: Defaults to number of CPU cores
+- `JPEG_QUALITY`: Set JPEG quality (default: 95)
+- `PNG_COMPRESSION`: Set PNG compression level (default: 6)
+- `WEBP_QUALITY`: Set WebP quality (default: 90)
+
+## Usage
+
+1. Start the server:
+```bash
+python app.py
+```
+
+The server will start on `http://localhost:5000`
+
+2. Send a POST request to `/pushup` endpoint with:
+   - Form field `images`: One or multiple image files
+   - Form field `Export-Type`: One of 'webp', 'png', 'jpg' (default: 'webp')
+
+### Output Sizes
+
+The API generates the following sizes for each image:
+
+- Thumbnail (t): 100x100
+- Small (s): 300x300
+- Medium (m): 500x500
+- Large (l): 800x800
+- Extra Large (xl): 1000x1000
+- Extra Extra Large (xxl): 1200x1200
+
+All sizes maintain the original aspect ratio.
+
+### Example Request using curl
+
+```bash
+curl -X POST \
+  http://localhost:5000/pushup \
+  -F "images=@image1.jpg" \
+  -F "images=@image2.png" \
+  -F "Export-Type=webp"
+```
+
+### Response
+
+The API returns a ZIP file containing all processed images organized in folders by original filename, with each size variant named according to its size designation.
+
+## CORS Configuration
+
+By default, the API accepts requests from `http://localhost:5001`. To modify CORS settings, update the CORS configuration in the code:
+
+```python
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5001"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Access-Control-Allow-Origin"],
+        "expose_headers": ["Content-Disposition"]
+    }
+})
+```
+
+## Error Handling
+
+The API includes comprehensive error handling for:
+- Invalid image files
+- Unsupported export types
+- Image processing errors
+- Server errors
+
+All errors are returned as JSON responses with appropriate HTTP status codes.
+
+## Performance Considerations
+
+- Uses ThreadPoolExecutor for parallel processing
+- Implements LRU cache for optimization calculations
+- Handles memory efficiently with temporary files
+- Optimizes image saving based on format
 
 ## 🤝 Contributing
 
